@@ -12,7 +12,7 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ### Fixed
 
-- **SSSD Delivery on every objective.** The game gives it ↓↓↓↑↑ on some objectives and ↓↓↓↓↓↑↑ on others; 0.5.4 knew only the second, and the plugin before it only the first. Both are recognised now, and the key types the one the menu shows.
+- **SSSD Delivery on every objective.** The game gives it ↓↓↓↑↑ on some objectives and ↓↓↓↓↓↑↑ on others; 0.5.4 knew only the second, and the plugin before it only the first. Both are recognised now, and the key types the one the menu shows, ↓↓↓↑↑ until it has.
 
 ## [0.5.4] - 2026-10-26
 

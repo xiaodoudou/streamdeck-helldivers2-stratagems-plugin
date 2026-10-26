@@ -1633,9 +1633,9 @@ mod tests {
 
     #[test]
     fn a_code_read_gets_the_catalog_code_it_fits_or_stands_as_read() {
-        let sssd = ["DDDDDUU", "DDDUU"];
-        assert_eq!(code_from_read("DDDDDUU", &sssd).as_deref(), Some("DDDDDUU"));
-        assert_eq!(code_from_read("DDDUU", &sssd).as_deref(), Some("DDDUU"), "its other code");
+        let sssd = ["DDDUU", "DDDDDUU"];
+        assert_eq!(code_from_read("DDDUU", &sssd).as_deref(), Some("DDDUU"));
+        assert_eq!(code_from_read("DDDDDUU", &sssd).as_deref(), Some("DDDDDUU"), "its other code");
         assert_eq!(code_from_read("DDDDD", &sssd).as_deref(), Some("DDDDDUU"), "cut short, fitting one only");
         assert_eq!(code_from_read("DDD", &sssd), None, "cut short before the two part");
         assert_eq!(code_from_read("RDURDL", &["RDURD"]).as_deref(), Some("RDURD"), "a stray arrow past the end");
@@ -1652,13 +1652,13 @@ mod tests {
         let shown = |code: &str| Row { code: Some(code.into()), ..row(sssd, 0, Status::Ready) };
         feed_n(&mut e, &[row(sssd, 0, Status::Ready)], 3);
         assert_eq!(view(&e, 0).code, None, "no code read: the key types the catalog's");
-        feed_n(&mut e, &[shown("DDDUU")], CODE_CONFIRM as usize - 1);
+        feed_n(&mut e, &[shown("DDDDDUU")], CODE_CONFIRM as usize - 1);
         assert_eq!(view(&e, 0).code, None, "not read often enough yet");
-        assert!(feed(&mut e, &[shown("DDDUU")]), "the code confirmed changes the key");
-        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDUU"), "SSSD's other code, as the menu shows it");
-        feed(&mut e, &[shown("DDDU")]);
-        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDUU"), "one stray reading changes nothing");
-        feed_n(&mut e, &[shown("DDDDDUU")], CODE_CONFIRM as usize);
+        assert!(feed(&mut e, &[shown("DDDDDUU")]), "the code confirmed changes the key");
+        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDDDUU"), "SSSD's other code, as the menu shows it");
+        feed(&mut e, &[shown("DDDDDU")]);
+        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDDDUU"), "one stray reading changes nothing");
+        feed_n(&mut e, &[shown("DDDUU")], CODE_CONFIRM as usize);
         assert_eq!(view(&e, 0).code, None, "the main code confirmed: the catalog's again");
     }
 
