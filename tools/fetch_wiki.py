@@ -2,7 +2,8 @@
 
 Each stratagem keeps its "type" and "icon", which name the game's own texture in data/icons/: those come from the
 game's files, not from the wiki. It keeps its "also" codes too, the other codes the game gives it on some missions,
-which the wiki's list doesn't show (SSSD Delivery's article has both of its codes; the list, one). A stratagem the wiki lists and the file lacks is reported and left out until its
+which the wiki's list doesn't show (SSSD Delivery's article has both of its codes; the list, one). When the list shows
+one of those, the main code stays: which code is the default (typed before the menu has shown which) is chosen here. A stratagem the wiki lists and the file lacks is reported and left out until its
 texture is added.
 """
 import html
@@ -43,9 +44,12 @@ def main() -> int:
         if name not in known:
             new.append(name)
             continue
+        code = "".join(ARROW[a] for a in arrows)
+        if code in known[name].get("also", []):  # the list shows one of its other codes: keep the main one chosen
+            code = known[name]["code"]
         entry = {
             "name": name,
-            "code": "".join(ARROW[a] for a in arrows),
+            "code": code,
             "cooldown": re.sub(r"<[^>]+>", "", cells[3]).strip(),
             "type": known[name]["type"],
             "icon": known[name]["icon"],

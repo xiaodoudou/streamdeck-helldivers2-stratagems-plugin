@@ -778,12 +778,12 @@
   },
   {
     "name": "SSSD Delivery",
-    "code": "DDDDDUU",
+    "code": "DDDUU",
     "cooldown": "8s",
     "type": "mission",
     "icon": "Upload_Data_Stratagem_Icon_Background.svg",
     "also": [
-      "DDDUU"
+      "DDDDDUU"
     ]
   },
   {
