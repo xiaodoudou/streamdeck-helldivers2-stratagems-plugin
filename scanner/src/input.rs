@@ -179,7 +179,10 @@ mod tests {
         for good in ["w", "a", "s", "d", "up", "home", "delete", "lctrl", "f5", "mouse4", "9", "space"] {
             assert!(valid(good), "{good}");
         }
-        for bad in ["", "W", "A", "Up", "Home", "LCTRL", "F1", "ctrl+w", "space ", " w", "ww", "é", "-", ";", "pgup", "del", "numpad1", "mouse6", "esc"] {
+        for bad in [
+            "", "W", "A", "Up", "Home", "LCTRL", "F1", "ctrl+w", "space ", " w", "ww", "é", "-", ";", "pgup", "del", "numpad1", "mouse6",
+            "esc",
+        ] {
             assert!(!valid(bad), "{bad:?}");
         }
     }

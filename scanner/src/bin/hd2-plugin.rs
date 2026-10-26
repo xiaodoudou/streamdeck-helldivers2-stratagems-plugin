@@ -64,8 +64,8 @@ type IconKey = (usize, Status, u8, u64);
 
 enum Event {
     Loadout(Loadout, Vec<usize>), // the menu slots, and the player's chosen loadout (see Engine::chosen)
-    State(GameState), // whether the game can be read, and whether a mission is on
-    Standby(bool),    // the game is not running: nothing is scanned until it starts
+    State(GameState),             // whether the game can be read, and whether a mission is on
+    Standby(bool),                // the game is not running: nothing is scanned until it starts
 
     Done { context: String, result: Result<(), String> },
 }
@@ -1564,18 +1564,23 @@ mod tests {
         // Counting the menu would take HMG for the first loadout stratagem and stall at the unreadable one; binding to
         // the card, which says what the player chose, finds the loadout all the same.
         let menu = [
-            "Reinforce", "SoS Beacon", "Resupply", "E/MG-101 HMG Emplacement", "", "Eagle Rearm",
-            "Orbital Laser", "LAS-98 Laser Cannon", "LIFT-182 Warp Pack", "EXO-45 Patriot Exosuit",
+            "Reinforce",
+            "SoS Beacon",
+            "Resupply",
+            "E/MG-101 HMG Emplacement",
+            "",
+            "Eagle Rearm",
+            "Orbital Laser",
+            "LAS-98 Laser Cannon",
+            "LIFT-182 Warp Pack",
+            "EXO-45 Patriot Exosuit",
         ];
         let mut p = plugin_with(&menu);
         p.chosen = ["Orbital Laser", "LAS-98 Laser Cannon", "LIFT-182 Warp Pack", "EXO-45 Patriot Exosuit"]
             .iter()
             .map(|name| p.catalog.iter().position(|s| s.name == *name).unwrap_or_else(|| panic!("no {name}")))
             .collect();
-        assert_eq!(
-            (0..4).map(|k| p.loadout_slot(k)).collect::<Vec<_>>(),
-            [Place::At(6), Place::At(7), Place::At(8), Place::At(9)],
-        );
+        assert_eq!((0..4).map(|k| p.loadout_slot(k)).collect::<Vec<_>>(), [Place::At(6), Place::At(7), Place::At(8), Place::At(9)],);
         assert_eq!(p.loadout_slot(4), Place::Missing, "the loadout has four");
         // the first loadout stratagem not on screen yet: nothing is placed, even with the card known
         let mut early = plugin_with(&["Reinforce", "SoS Beacon", "Resupply"]);
