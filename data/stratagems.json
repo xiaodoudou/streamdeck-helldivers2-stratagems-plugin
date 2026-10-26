@@ -30,7 +30,7 @@
   {
     "name": "Orbital Airburst Strike",
     "code": "RRR",
-    "cooldown": "100s",
+    "cooldown": "90s",
     "type": "offensive",
     "icon": "Orbital_Airburst_Strike_Stratagem_Icon_Background.svg"
   },
@@ -266,13 +266,6 @@
     "icon": "Breaching_Hammer_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "PLAS-45 Epoch",
-    "code": "DLULR",
-    "cooldown": "480s",
-    "type": "supply",
-    "icon": "Epoch_Stratagem_Icon_Background.svg"
-  },
-  {
     "name": "MGX-42 Bullet Storm",
     "code": "DLDRUL",
     "cooldown": "70s",
@@ -280,11 +273,32 @@
     "icon": "Bullet_Storm_Stratagem_Icon_Background.svg"
   },
   {
+    "name": "PLAS-45 Epoch",
+    "code": "DLULR",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Epoch_Stratagem_Icon_Background.svg"
+  },
+  {
     "name": "S-11 Speargun",
     "code": "DRDLUR",
     "cooldown": "480s",
     "type": "supply",
     "icon": "Speargun_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "EAT-411 Leveller",
+    "code": "DDLUD",
+    "cooldown": "140s",
+    "type": "supply",
+    "icon": "Leveller_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "EAT-700 Expendable Napalm",
+    "code": "DDLUL",
+    "cooldown": "140s",
+    "type": "supply",
+    "icon": "Expendable_Napalm_Stratagem_Icon_Background.svg"
   },
   {
     "name": "CQC-9 Defoliation Tool",
@@ -301,32 +315,11 @@
     "icon": "De-Escalator_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "EAT-700 Expendable Napalm",
-    "code": "DDLUL",
-    "cooldown": "140s",
-    "type": "supply",
-    "icon": "Expendable_Napalm_Stratagem_Icon_Background.svg"
-  },
-  {
     "name": "TX-41 Sterilizer",
     "code": "DLUDL",
     "cooldown": "480s",
     "type": "supply",
     "icon": "Sterilizer_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "EAT-411 Leveller",
-    "code": "DDLUD",
-    "cooldown": "140s",
-    "type": "supply",
-    "icon": "Leveller_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "GL-28 Belt-Fed Grenade Launcher",
-    "code": "DLULUU",
-    "cooldown": "480s",
-    "type": "supply",
-    "icon": "Belt-Fed_Grenade_Launcher_Stratagem_Icon_Background.svg"
   },
   {
     "name": "B/MD C4 Pack",
@@ -350,18 +343,25 @@
     "icon": "Cremator_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "M-1000 Maxigun",
-    "code": "DLRDUU",
-    "cooldown": "480s",
-    "type": "supply",
-    "icon": "Maxigun_Stratagem_Icon_Background.svg"
-  },
-  {
     "name": "CQC-1 One True Flag",
     "code": "DLRRU",
     "cooldown": "480s",
     "type": "supply",
     "icon": "One_True_Flag_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "GL-28 Belt-Fed Grenade Launcher",
+    "code": "DLULUU",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Belt-Fed_Grenade_Launcher_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "M-1000 Maxigun",
+    "code": "DLRDUU",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Maxigun_Stratagem_Icon_Background.svg"
   },
   {
     "name": "40-K Meltagun",
@@ -462,11 +462,11 @@
     "icon": "Warp_Pack_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "M-103 Supply FRV",
-    "code": "LDLLDUR",
+    "name": "M-104 Incinerator FRV",
+    "code": "LDRLDUU",
     "cooldown": "480s",
     "type": "supply",
-    "icon": "Supply_FRV_Stratagem_Icon_Background.svg"
+    "icon": "Incinerator_FRV_Stratagem_Icon_Background.svg"
   },
   {
     "name": "TD-110 Maelstrom",
@@ -474,13 +474,6 @@
     "cooldown": "780s",
     "type": "supply",
     "icon": "Maelstrom_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "M-104 Incinerator FRV",
-    "code": "LDRLDUU",
-    "cooldown": "480s",
-    "type": "supply",
-    "icon": "Incinerator_FRV_Stratagem_Icon_Background.svg"
   },
   {
     "name": "EXO-49 Emancipator Exosuit",
@@ -495,6 +488,13 @@
     "cooldown": "420s",
     "type": "supply",
     "icon": "Patriot_Exosuit_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "M-103 Supply FRV",
+    "code": "LDLLDUR",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Supply_FRV_Stratagem_Icon_Background.svg"
   },
   {
     "name": "M-102 Gunner FRV",
@@ -651,27 +651,6 @@
     "icon": "Anti-Tank_Emplacement_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Eagle Rearm",
-    "code": "UULUR",
-    "cooldown": "0s",
-    "type": "mission",
-    "icon": "Eagle_Rearm_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "Call In Super Destroyer",
-    "code": "UUDDLRLR",
-    "cooldown": "N/A",
-    "type": "mission",
-    "icon": "Call_In_Super_Destroyer_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "SoS Beacon",
-    "code": "UDRU",
-    "cooldown": "0s",
-    "type": "mission",
-    "icon": "SOS_Beacon_Stratagem_Icon_Background.svg"
-  },
-  {
     "name": "Reinforce",
     "code": "UDRLU",
     "cooldown": "0s",
@@ -686,23 +665,51 @@
     "icon": "Resupply_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "SSSD Delivery",
-    "code": "DDDUU",
-    "cooldown": "8s",
+    "name": "SoS Beacon",
+    "code": "UDRU",
+    "cooldown": "0s",
     "type": "mission",
-    "icon": "Upload_Data_Stratagem_Icon_Background.svg"
+    "icon": "SOS_Beacon_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "SEAF Artillery",
-    "code": "RUUD",
-    "cooldown": "14s",
+    "name": "Eagle Rearm",
+    "code": "UULUR",
+    "cooldown": "0s",
     "type": "mission",
-    "icon": "SEAF_Artillery_Stratagem_Icon_Background.svg"
+    "icon": "Eagle_Rearm_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Hive Breaker Drill",
-    "code": "LUDRDD",
-    "cooldown": "119s",
+    "name": "Call In Super Destroyer",
+    "code": "UUDDLRLR",
+    "cooldown": "N/A",
+    "type": "mission",
+    "icon": "Call_In_Super_Destroyer_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Tectonic Drill",
+    "code": "UDUDUD",
+    "cooldown": "0s",
+    "type": "mission",
+    "icon": "Tectonic_Drill_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Cargo Container",
+    "code": "UUDDRD",
+    "cooldown": "0s",
+    "type": "mission",
+    "icon": "Cargo_Container_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Activate E-711 Extraction Drill",
+    "code": "DDLLDD",
+    "cooldown": "0s",
+    "type": "mission",
+    "icon": "Drill_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Aquifer Drill",
+    "code": "LLLUDRDD",
+    "cooldown": "0s",
     "type": "mission",
     "icon": "Drill_Stratagem_Icon_Background.svg"
   },
@@ -714,6 +721,13 @@
     "icon": "Cargo_Container_Stratagem_Icon_Background.svg"
   },
   {
+    "name": "Reinforcement Pods",
+    "code": "LRUUU",
+    "cooldown": "N/A",
+    "type": "mission",
+    "icon": "Upload_Data_Stratagem_Icon_Background.svg"
+  },
+  {
     "name": "Tactical Video Camera",
     "code": "RDDULLU",
     "cooldown": "N/A",
@@ -721,11 +735,32 @@
     "icon": "Tactical_Video_Camera_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Upload Data",
-    "code": "LRUUU",
-    "cooldown": "N/A",
+    "name": "Hive Breaker Drill",
+    "code": "LUDRDD",
+    "cooldown": "119s",
     "type": "mission",
-    "icon": "Upload_Data_Stratagem_Icon_Background.svg"
+    "icon": "Drill_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Dark Fluid Vessel",
+    "code": "ULRDUU",
+    "cooldown": "30s",
+    "type": "mission",
+    "icon": "Dark_Fluid_Vessel_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "NUX-223 Hellbomb",
+    "code": "DULDURDU",
+    "cooldown": "30s",
+    "type": "mission",
+    "icon": "Hellbomb_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Prospecting Drill",
+    "code": "DDLRDD",
+    "cooldown": "0s",
+    "type": "mission",
+    "icon": "Drill_Stratagem_Icon_Background.svg"
   },
   {
     "name": "Seismic Probe",
@@ -742,60 +777,25 @@
     "icon": "Super_Earth_Flag_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Cargo Container",
-    "code": "UUDDRD",
-    "cooldown": "0s",
+    "name": "SSSD Delivery",
+    "code": "DDDDDUU",
+    "cooldown": "8s",
     "type": "mission",
-    "icon": "Cargo_Container_Stratagem_Icon_Background.svg"
+    "icon": "Upload_Data_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Dark Fluid Vessel",
-    "code": "ULRDUU",
-    "cooldown": "30s",
-    "type": "mission",
-    "icon": "Dark_Fluid_Vessel_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "Activate E-711 Extraction Drill",
-    "code": "DDLLDD",
-    "cooldown": "0s",
-    "type": "mission",
-    "icon": "Drill_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "Prospecting Drill",
-    "code": "DDLRDD",
-    "cooldown": "0s",
-    "type": "mission",
-    "icon": "Drill_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "Aquifer Drill",
-    "code": "LLLUDRDD",
-    "cooldown": "0s",
-    "type": "mission",
-    "icon": "Drill_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "Reinforcement Pods",
+    "name": "Upload Data",
     "code": "LRUUU",
     "cooldown": "N/A",
     "type": "mission",
     "icon": "Upload_Data_Stratagem_Icon_Background.svg"
   },
   {
-    "name": "Tectonic Drill",
-    "code": "UDUDUD",
-    "cooldown": "0s",
+    "name": "SEAF Artillery",
+    "code": "RUUD",
+    "cooldown": "14s",
     "type": "mission",
-    "icon": "Tectonic_Drill_Stratagem_Icon_Background.svg"
-  },
-  {
-    "name": "NUX-223 Hellbomb",
-    "code": "DULDURDU",
-    "cooldown": "30s",
-    "type": "mission",
-    "icon": "Hellbomb_Stratagem_Icon_Background.svg"
+    "icon": "SEAF_Artillery_Stratagem_Icon_Background.svg"
   },
   {
     "name": "Orbital Illumination Flare",
@@ -803,5 +803,33 @@
     "cooldown": "N/A",
     "type": "mission",
     "icon": "Orbital_Illumination_Flare_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Eagle Fly By",
+    "code": "UDDUUDDUU",
+    "cooldown": "N/A",
+    "type": "offensive",
+    "icon": "Eagle_Fly_By_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "Orbital Confetti",
+    "code": "RDDUUDDUU",
+    "cooldown": "80s",
+    "type": "offensive",
+    "icon": "Orbital_Confetti_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "AMW-20 Apex",
+    "code": "DLLUDL",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Apex_Stratagem_Icon_Background.svg"
+  },
+  {
+    "name": "LAS-44 Nova",
+    "code": "DLRDD",
+    "cooldown": "480s",
+    "type": "supply",
+    "icon": "Nova_Stratagem_Icon_Background.svg"
   }
 ]

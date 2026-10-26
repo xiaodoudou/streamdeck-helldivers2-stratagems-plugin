@@ -81,7 +81,8 @@ const DEFAULTS = { auto_scan: true, auto_menu_scan: true, scan_period: 0.15, con
 let global = {};
 const MOUSE = { 0: 'mouse1', 1: 'mouse3', 2: 'mouse2', 3: 'mouse4', 4: 'mouse5' };
 const SPECIAL = { ControlLeft: 'lctrl', ControlRight: 'rctrl', ShiftLeft: 'lshift', ShiftRight: 'rshift', AltLeft: 'lalt', AltRight: 'ralt',
-  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Space: 'space', Tab: 'tab', Enter: 'enter', CapsLock: 'capslock', Escape: 'escape' };
+  ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Home: 'home', End: 'end', PageUp: 'pageup', PageDown: 'pagedown',
+  Insert: 'insert', Delete: 'delete', Space: 'space', Tab: 'tab', Enter: 'enter', CapsLock: 'capslock', Escape: 'escape' };
 
 let ws, ctx, settings = {}, listening = null, taken = null, msgTimer = null;
 const sel = $('slot');

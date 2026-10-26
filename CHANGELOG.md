@@ -4,6 +4,16 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+### Added
+
+- **Four more stratagems.** Eagle Fly By, Orbital Confetti, the AMW-20 Apex and the LAS-44 Nova are read and shown on the keys, with their icons taken from the game's files like the others. A mission stratagem the plugin didn't know, such as Eagle Fly By, left its slot key on the signal icon for the whole mission.
+
+### Fixed
+
+- **Keys the panel turned away.** The Scan key's inputs wouldn't take Home, End, Insert, Delete, Page Up or Page Down, so a menu or code key bound to one of them couldn't be matched. They are taken now, alongside the letters, digits, arrows, function keys and mouse buttons.
+- **Stratagem Setup keys find your loadout past any mission stratagem.** A Setup key found your loadout by counting the menu and skipping the stratagems every mission gives. A stratagem it couldn't read, or one a mission hands out that a player could also pick, like the HMG Emplacement, stopped or shifted the count: the key showed the signal icon and refused to call anything in. It now goes by the stratagems your card showed on the loadout screen, finds the first of them in the menu, and takes the others in order after it. Without the loadout screen (the plugin started during a mission), it counts as before.
+- **SSSD Delivery's code.** The game changed it to ↓↓↓↓↓↑↑; the plugin still typed the old one.
+
 ## [0.5.3] - 2026-10-18
 
 ### Changed

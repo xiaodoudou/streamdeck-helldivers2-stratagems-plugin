@@ -63,7 +63,7 @@ enum Place {
 type IconKey = (usize, Status, u8, u64);
 
 enum Event {
-    Loadout(Loadout),
+    Loadout(Loadout, Vec<usize>), // the menu slots, and the player's chosen loadout (see Engine::chosen)
     State(GameState), // whether the game can be read, and whether a mission is on
     Standby(bool),    // the game is not running: nothing is scanned until it starts
 
@@ -488,6 +488,7 @@ fn describe(l: &Loadout, names: &[String]) -> String {
 struct Plugin {
     keys: HashMap<String, Key>,
     loadout: Loadout,
+    chosen: Vec<usize>, // the player's loadout as read from the card: the stratagem each slot holds, in the order chosen
     catalog: Vec<Stratagem>,
     icons: HashMap<IconKey, String>,
     setups: HashMap<Vec<Cell>, String>, // Stratagem Setup pictures, by what their places show
@@ -623,11 +624,22 @@ impl Plugin {
         }
     }
 
-    /// Where the player's loadout stratagem `k` (0: the first one chosen) is in the menu: the k-th slot holding a
-    /// stratagem a player chooses, counted in menu order. Reinforce, SOS Beacon, Resupply and a mission's own stratagems
-    /// are all mission stratagems, which no player chooses, so a mission that starts with one of its own moves the
-    /// loadout along and this follows it. Waiting while a slot before it, or the menu itself, has not been read yet.
+    /// Where the player's loadout stratagem `k` (0: the first one chosen) is in the menu. The loadout stratagems sit
+    /// together, in the order chosen, after any a mission gives, so once the first is found by what it is (the card
+    /// says which stratagem that is), the k-th follows it. This holds even when a mission puts a stratagem among them
+    /// that the reader can't place, or one a player could have chosen, which counting the menu would stumble on.
+    /// Without a card (the plugin started inside a mission) it falls back to counting the stratagems a player chooses,
+    /// in menu order, skipping the ones every mission gives. Waiting while the loadout has not been read yet.
     fn loadout_slot(&self, k: usize) -> Place {
+        if let Some(&first) = self.chosen.first() {
+            if k >= self.chosen.len() {
+                return Place::Missing; // the loadout has fewer stratagems
+            }
+            return match self.loadout.iter().position(|v| v.as_ref().is_some_and(|s| s.index == first)) {
+                Some(s0) => Place::At(s0 + k),
+                None => Place::Waiting, // the first loadout stratagem is not on screen yet, so none is placed
+            };
+        }
         let mut n = 0;
         for (s, v) in self.loadout.iter().enumerate() {
             match v {
@@ -719,10 +731,11 @@ fn scan_thread(engine: Arc<Mutex<Engine>>, cfg: Arc<Mutex<Config>>, tx: mpsc::Un
                 if !up && running.is_some() {
                     // the loadout belonged to the game that just closed
                     let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
-                    e.clear();
+                    e.forget();
                     last = e.loadout();
+                    let chosen = e.chosen();
                     drop(e);
-                    if tx.send(Event::Loadout(last.clone())).is_err() {
+                    if tx.send(Event::Loadout(last.clone(), chosen)).is_err() {
                         return;
                     }
                 }
@@ -736,7 +749,7 @@ fn scan_thread(engine: Arc<Mutex<Engine>>, cfg: Arc<Mutex<Config>>, tx: mpsc::Un
             wake.sleep(GAME_POLL, t.elapsed());
             continue;
         }
-        let (l, ms, err, state, mission, coming) = {
+        let (l, chosen, ms, err, state, mission, coming) = {
             let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
             if c.auto_scan {
                 if std::panic::catch_unwind(AssertUnwindSafe(|| e.scan(&c))).is_err() {
@@ -758,7 +771,7 @@ fn scan_thread(engine: Arc<Mutex<Engine>>, cfg: Arc<Mutex<Config>>, tx: mpsc::Un
                 log(format!("game position from {:?}", e.source));
                 last_source = e.source;
             }
-            (e.loadout(), e.scan_ms, e.last_error.clone(), e.game_state(), e.mission_slots(), e.mission_expected())
+            (e.loadout(), e.chosen(), e.scan_ms, e.last_error.clone(), e.game_state(), e.mission_slots(), e.mission_expected())
         };
         if err != last_err {
             match &err {
@@ -816,15 +829,16 @@ fn scan_thread(engine: Arc<Mutex<Engine>>, cfg: Arc<Mutex<Config>>, tx: mpsc::Un
                 Err(_) => {}
             }
             let fresh = e.loadout();
+            let chosen = e.chosen();
             drop(e);
-            if tx.send(Event::Loadout(fresh)).is_err() {
+            if tx.send(Event::Loadout(fresh, chosen)).is_err() {
                 return;
             }
             continue; // `l` above predates the menu read
         }
         if l != last {
             log(format!("loadout {}", describe(&l, &names)));
-            if tx.send(Event::Loadout(l.clone())).is_err() {
+            if tx.send(Event::Loadout(l.clone(), chosen.clone())).is_err() {
                 log("plugin loop gone; scan thread stops");
                 return;
             }
@@ -932,6 +946,7 @@ async fn main() {
     let mut p = Plugin {
         keys: HashMap::new(),
         loadout: Vec::new(),
+        chosen: Vec::new(),
         catalog,
         icons: HashMap::new(),
         setups: HashMap::new(),
@@ -1002,7 +1017,7 @@ async fn main() {
                                             if result.is_ok() {
                                                 let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
                                                 if e.mark_called(v.index) {
-                                                    let _ = tx.send(Event::Loadout(e.loadout()));
+                                                    let _ = tx.send(Event::Loadout(e.loadout(), e.chosen()));
                                                 }
                                                 drop(e);
                                                 wake.burst();
@@ -1048,7 +1063,7 @@ async fn main() {
                                             }
                                             let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
                                             if e.mark_called(*index) {
-                                                let _ = tx.send(Event::Loadout(e.loadout()));
+                                                let _ = tx.send(Event::Loadout(e.loadout(), e.chosen()));
                                             }
                                             drop(e);
                                             wake.burst();
@@ -1080,7 +1095,7 @@ async fn main() {
                                 tokio::task::spawn_blocking(move || {
                                     let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
                                     let result = e.scan_menu(&c).map(|_| ());
-                                    let _ = tx.send(Event::Loadout(e.loadout()));
+                                    let _ = tx.send(Event::Loadout(e.loadout(), e.chosen()));
                                     let _ = tx.send(Event::Done { context, result });
                                 });
                                 vec![]
@@ -1089,6 +1104,7 @@ async fn main() {
                                 let mut e = engine.lock().unwrap_or_else(|p| p.into_inner());
                                 e.clear();
                                 p.loadout = e.loadout();
+                                p.chosen = e.chosen();
                                 log("loadout cleared");
                                 let mut out = p.paint_slots();
                                 out.push(MessageOut::ShowOk { context });
@@ -1101,9 +1117,10 @@ async fn main() {
                 },
             },
             Some(ev) = rx.recv() => match ev {
-                Event::Loadout(l) => {
-                    if l != p.loadout {
+                Event::Loadout(l, chosen) => {
+                    if l != p.loadout || chosen != p.chosen {
                         p.loadout = l;
+                        p.chosen = chosen;
                         p.paint_slots()
                     } else {
                         vec![]
@@ -1187,6 +1204,7 @@ mod tests {
         Plugin {
             keys: HashMap::new(),
             loadout,
+            chosen: Vec::new(),
             catalog,
             icons: HashMap::new(),
             setups: HashMap::new(),
@@ -1540,6 +1558,32 @@ mod tests {
     }
 
     #[test]
+    fn the_setup_key_binds_to_the_card_past_a_mission_stratagem_it_cannot_read() {
+        // the live menu from issue #9: a mission put HMG Emplacement (one a player can also choose, so not flagged a
+        // mission stratagem) and an Eagle the reader can't place ("") before the loadout, moving it to slots 6..10.
+        // Counting the menu would take HMG for the first loadout stratagem and stall at the unreadable one; binding to
+        // the card, which says what the player chose, finds the loadout all the same.
+        let menu = [
+            "Reinforce", "SoS Beacon", "Resupply", "E/MG-101 HMG Emplacement", "", "Eagle Rearm",
+            "Orbital Laser", "LAS-98 Laser Cannon", "LIFT-182 Warp Pack", "EXO-45 Patriot Exosuit",
+        ];
+        let mut p = plugin_with(&menu);
+        p.chosen = ["Orbital Laser", "LAS-98 Laser Cannon", "LIFT-182 Warp Pack", "EXO-45 Patriot Exosuit"]
+            .iter()
+            .map(|name| p.catalog.iter().position(|s| s.name == *name).unwrap_or_else(|| panic!("no {name}")))
+            .collect();
+        assert_eq!(
+            (0..4).map(|k| p.loadout_slot(k)).collect::<Vec<_>>(),
+            [Place::At(6), Place::At(7), Place::At(8), Place::At(9)],
+        );
+        assert_eq!(p.loadout_slot(4), Place::Missing, "the loadout has four");
+        // the first loadout stratagem not on screen yet: nothing is placed, even with the card known
+        let mut early = plugin_with(&["Reinforce", "SoS Beacon", "Resupply"]);
+        early.chosen = p.chosen.clone();
+        assert_eq!(early.loadout_slot(0), Place::Waiting);
+    }
+
+    #[test]
     fn a_stratagem_setup_key_shows_its_stratagems_side_by_side_or_in_a_square() {
         let shifted = ["Reinforce", "SoS Beacon", "Resupply", "Call In Super Destroyer", "Orbital Laser", "LAS-98 Laser Cannon"];
         let mut p = plugin_with(&shifted);
@@ -1688,6 +1732,7 @@ mod tests {
         let mut p = Plugin {
             keys: HashMap::new(),
             loadout: vec![],
+            chosen: Vec::new(),
             catalog,
             icons: HashMap::new(),
             setups: HashMap::new(),
@@ -1795,6 +1840,7 @@ mod tests {
         let mut p = Plugin {
             keys: HashMap::new(),
             loadout: vec![],
+            chosen: Vec::new(),
             catalog,
             icons: HashMap::new(),
             setups: HashMap::new(),
