@@ -321,6 +321,7 @@ pub struct Engine {
     last_hud: Option<Instant>,            // last time any stratagem row was on screen
     card: Option<Vec<(usize, bool)>>,     // the loadout card as last read, to be read the same once more
     card_seen: Option<Instant>,           // last time the loadout card was on screen
+    chosen: Vec<usize>,                   // the stratagems the player chose, from the last card confirmed (see chosen)
 }
 
 /// What the game is doing, as far as the screen tells.
@@ -359,6 +360,7 @@ impl Engine {
             last_hud: None,
             card: None,
             card_seen: None,
+            chosen: Vec::new(),
         })
     }
 
@@ -366,6 +368,14 @@ impl Engine {
     pub fn loadout(&self) -> Vec<Option<SlotView>> {
         let len = self.slots.keys().next_back().map_or(0, |k| k + 1);
         (0..len).map(|k| self.slots.get(&k).map(Slot::view)).collect()
+    }
+
+    /// The stratagems the player chose on the loadout screen, in the order chosen (0: the first), from the last card
+    /// read the same twice; empty when none has been. They are kept once the card leaves the screen, for the whole
+    /// mission (see forget). The Stratagem Setup key binds to these, so a stratagem a mission adds among them, even
+    /// one the reader cannot place, does not move the loadout positions along.
+    pub fn chosen(&self) -> Vec<usize> {
+        self.chosen.clone()
     }
 
     /// Cooldown length: as last measured this session, otherwise the wiki figure.
@@ -405,6 +415,13 @@ impl Engine {
         self.matcher.reset();
     }
 
+    /// The mission is over, or the game closed: clear the slots and forget what the player chose, which only the next
+    /// loadout screen tells. The Clear key only clears: the loadout chosen still holds for the rest of the mission.
+    pub fn forget(&mut self) {
+        self.clear();
+        self.chosen.clear();
+    }
+
     /// Slots read in the mission, as opposed to those known only from the loadout screen.
     pub fn mission_slots(&self) -> usize {
         self.slots.values().filter(|s| !s.prefilled).count()
@@ -430,7 +447,12 @@ impl Engine {
         }
         let again = card.is_some() && card == self.card;
         self.card = card;
-        again && self.prefill(self.card.clone().unwrap_or_default())
+        if !again {
+            return false;
+        }
+        let card = self.card.clone().unwrap_or_default();
+        self.chosen = card.iter().skip(crate::matcher::CARD_COMMON).map(|&(i, _)| i).collect();
+        self.prefill(card)
     }
 
     /// The loadout screen was on screen within MISSION_EXPECTED: the next stratagem HUD (Reinforce, which the
@@ -624,7 +646,7 @@ impl Engine {
             // the mission is over: forget it, once, so that a loadout read on the loadout screen afterwards stays
             self.last_hud = None;
             if !self.slots.is_empty() {
-                self.clear();
+                self.forget();
                 return true;
             }
         }
@@ -1534,6 +1556,28 @@ mod tests {
         unsure.iter_mut().for_each(|r| r.sure = false);
         feed_n(&mut e, &unsure, 2);
         assert_eq!(names(&e)[1], "SoS Beacon");
+    }
+
+    #[test]
+    fn what_the_player_chose_outlasts_the_card_until_the_mission_is_over() {
+        let mut e = engine();
+        let c = card(&e, &["Reinforce", "SoS Beacon", "Resupply", "Orbital Laser", "LIFT-182 Warp Pack"]);
+        e.take_card(Some(c.clone()));
+        assert!(e.chosen().is_empty(), "one reading is not enough");
+        e.take_card(Some(c));
+        let want = vec![idx(&e, "Orbital Laser"), idx(&e, "LIFT-182 Warp Pack")];
+        assert_eq!(e.chosen(), want);
+        // the loadout screen goes (hellpod, loading): the card reads as nothing, the choice stays
+        e.take_card(None);
+        assert_eq!(e.chosen(), want);
+        e.clear();
+        assert_eq!(e.chosen(), want, "the Clear key leaves the loadout chosen");
+        // a mission, then no HUD long enough: the mission is over and the choice goes with it
+        let reinforce = idx(&e, "Reinforce");
+        feed_n(&mut e, &[row(reinforce, 0, Status::Ready)], 2);
+        e.last_hud = Some(ago(LOBBY_RESET.as_secs_f32() + 1.0));
+        assert!(feed(&mut e, &[]), "the mission is over");
+        assert!(e.chosen().is_empty());
     }
 
     #[test]

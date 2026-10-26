@@ -37,7 +37,7 @@ The plugin calls a stratagem in the way you would: it opens the stratagem menu a
 - *Throw* is the key or mouse button you throw a stratagem with (the left mouse button by default in the game). Stratagem Setup keys need it, since they throw each stratagem before calling the next.
 - *Throw after calling in* makes the slot keys throw too, right after the code (off by default). A configuration from before 0.5.2 with a throw key set has it on, since setting the key was what made the keys throw then.
 
-To set an input, click its box, then press the key or mouse button, anywhere in the panel. Backspace clears the throw key.
+To set an input, click its box, then press the key or mouse button, anywhere in the panel. The boxes take the letters and digits, the arrow keys, Home, End, Insert, Delete, Page Up and Page Down, the function keys and the five mouse buttons, so you can match whatever you have bound in the game. Backspace clears the throw key.
 
 ## Playing
 
@@ -51,7 +51,7 @@ Press a slot key to call its stratagem in. The game has to be the window in fron
 
 ### Stratagem Setup
 
-A Stratagem Setup key calls several stratagems in with one press, such as a sentry and the supply pack that goes with it. In its settings, pick two to four stratagems of your loadout, numbered in the order you chose them: *Loadout 1* is the first. A new key takes the first two. The plugin finds them in the stratagem menu wherever they are: a mission that starts with a stratagem of its own, such as Call In Super Destroyer, moves your loadout along by one slot, and the Setup key follows it, since the stratagems the game gives are all mission stratagems that no player chooses.
+A Stratagem Setup key calls several stratagems in with one press, such as a sentry and the supply pack that goes with it. In its settings, pick two to four stratagems of your loadout, numbered in the order you chose them: *Loadout 1* is the first. A new key takes the first two. The plugin finds them in the stratagem menu wherever they are. It knows your loadout from your card on the loadout screen, looks for the first of your stratagems in the menu, and takes the others in order after it, so the stratagems a mission puts before yours don't throw it off, even one the plugin can't read. If the plugin only started during the mission, it hasn't seen the loadout screen: it then counts your stratagems in the menu, skipping the ones every mission gives.
 
 Pressing it calls each slot's stratagem in, in the order chosen, and throws it before the next, since you can only hold one at a time. So it needs the *Throw* input, set on the Scan key; without it, the key shows a warning triangle and nothing is typed. A stratagem that isn't ready (cooling down, unavailable, or already on its way) is skipped, and the others are called in. Between two stratagems, the plugin waits a second after the throw, so that the throw has ended when it opens the menu again.
 

@@ -16,6 +16,12 @@ fn vk(name: &str) -> Option<(u16, bool)> {
         "down" => (0x28, true),
         "left" => (0x25, true),
         "right" => (0x27, true),
+        "home" => (0x24, true),
+        "end" => (0x23, true),
+        "pageup" => (0x21, true),
+        "pagedown" => (0x22, true),
+        "insert" => (0x2D, true),
+        "delete" => (0x2E, true),
         "lctrl" | "ctrl" => (0xA2, false),
         "rctrl" => (0xA3, true),
         "lshift" | "shift" => (0xA0, false),
@@ -110,6 +116,16 @@ mod tests {
     }
 
     #[test]
+    fn navigation_cluster_are_extended_keys() {
+        assert_eq!(vk("home"), Some((0x24, true)));
+        assert_eq!(vk("end"), Some((0x23, true)));
+        assert_eq!(vk("pageup"), Some((0x21, true)));
+        assert_eq!(vk("pagedown"), Some((0x22, true)));
+        assert_eq!(vk("insert"), Some((0x2D, true)));
+        assert_eq!(vk("delete"), Some((0x2E, true)));
+    }
+
+    #[test]
     fn modifiers_and_named_keys() {
         assert_eq!(vk("ctrl"), vk("lctrl"));
         assert_eq!(vk("lctrl"), Some((0xA2, false)));
@@ -160,10 +176,13 @@ mod tests {
 
     #[test]
     fn valid_accepts_keys_and_buttons_only() {
-        for good in ["w", "a", "s", "d", "up", "lctrl", "f5", "mouse4", "9", "space"] {
+        for good in ["w", "a", "s", "d", "up", "home", "delete", "lctrl", "f5", "mouse4", "9", "space"] {
             assert!(valid(good), "{good}");
         }
-        for bad in ["", "W", "A", "Up", "LCTRL", "F1", "ctrl+w", "space ", " w", "ww", "é", "-", ";", "numpad1", "mouse6", "esc"] {
+        for bad in [
+            "", "W", "A", "Up", "Home", "LCTRL", "F1", "ctrl+w", "space ", " w", "ww", "é", "-", ";", "pgup", "del", "numpad1", "mouse6",
+            "esc",
+        ] {
             assert!(!valid(bad), "{bad:?}");
         }
     }

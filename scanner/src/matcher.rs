@@ -266,7 +266,7 @@ pub fn column_box(w: usize, h: usize, icon_scale: f64) -> (usize, usize, usize, 
 // the step to the next)
 const CARD_MISSION: (f64, f64, f64, f64) = (80.0, 1037.0, 60.0, 81.3);
 const CARD_LOADOUT: (f64, f64, f64, f64) = (78.0, 1119.0, 98.0, 114.0);
-const CARD_COMMON: usize = 3;
+pub const CARD_COMMON: usize = 3;
 const CARD_LOADOUT_SLOTS: usize = 4;
 const CARD_PAD: f64 = 4.0; // the icons are searched this far around their place
 // glyph score of a stratagem on the card: icons read 0.79 or more, empty boxes and other screens 0.55 at most
@@ -1072,7 +1072,7 @@ mod tests {
     fn shared_icons_are_told_apart_by_the_code() {
         let mut m = matcher();
         for (icon, code, want) in [
-            ("Upload Data", "DDDUU", &["SSSD Delivery"][..]),
+            ("Upload Data", "DDDDDUU", &["SSSD Delivery"][..]),
             ("SSSD Delivery", "LRUUU", &["Upload Data", "Reinforcement Pods"]), // same code: interchangeable
             ("Hive Breaker Drill", "LLLUDRDD", &["Aquifer Drill"]),
             ("Aquifer Drill", "DDLRDD", &["Prospecting Drill"]),
@@ -1107,7 +1107,7 @@ mod tests {
         let mut m = matcher();
         let upload = idx(&m, "Upload Data");
         let (mut col, origin) = blank_column();
-        draw_row(&m, &mut col, origin, 4, upload, "DDDUU");
+        draw_row(&m, &mut col, origin, 4, upload, "DDDDDUU");
         assert_eq!(read(&mut m, &col, origin), [(4, "SSSD Delivery".to_string(), true, Status::Ready)]);
         // the next frames show the same icon on cooldown, without arrows
         let (mut col, origin) = blank_column();

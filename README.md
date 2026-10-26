@@ -8,7 +8,7 @@
 
 A Stream Deck plugin for Helldivers 2. It reads your loadout from the game's screen, shows each stratagem on a key with its cooldown, and calls it in when you press the key, by opening the stratagem menu and typing the arrow code for you.
 
-![The keys during a mission: the game starts, the loadout fills the keys, then the Orbital Laser and the Warp Pack are called in and cool down](docs/img/demo.gif)
+![The keys during a mission: the game starts, the loadout fills the keys, then the Orbital Laser is called in from its key and a Stratagem Setup key calls in the Quasar Cannon and the Warp Pack, each cooling down after](docs/img/demo.gif)
 
 </div>
 
