@@ -68,6 +68,8 @@ pub struct Line {
     pub score: f32,
     /// The timer after "Cooldown" or "Inbound", in seconds, when all four digits read clearly.
     pub timer: Option<u32>,
+    /// Ready because the line shows the code's arrows (the menu is open), not the word "Ready": worth reading them.
+    pub arrows: bool,
 }
 
 /// Right edge (at 1440p) the capture must reach for the status words and the first CODE_READ arrows.
@@ -128,7 +130,7 @@ impl StatusReader {
     /// The status line of the row whose icon top is at `top` (1440p units), in a capture starting at `origin`.
     pub fn read(&mut self, col: &Img, f: f64, size: usize, top: f64, origin: (usize, usize)) -> Line {
         self.prepare(f, size);
-        let Some((_, tpls)) = &self.scaled else { return Line { status: Status::Unknown, score: 0.0, timer: None } };
+        let Some((_, tpls)) = &self.scaled else { return Line { status: Status::Unknown, score: 0.0, timer: None, arrows: false } };
         let mut best: Option<(&Template, f32, isize, isize)> = None;
         for t in tpls.iter().filter(|t| t.digit.is_none()) {
             let (c, x, y) = near(col, t, at(f, t.x, top, origin), slack(f));
@@ -136,9 +138,9 @@ impl StatusReader {
                 best = Some((t, c, x, y));
             }
         }
-        let Some((t, score, x, y)) = best else { return Line { status: Status::Unknown, score: STATUS_MIN, timer: None } };
+        let Some((t, score, x, y)) = best else { return Line { status: Status::Unknown, score: STATUS_MIN, timer: None, arrows: false } };
         let timer = t.timer.and_then(|after| read_timer(col, f, tpls, (x + (after * f).round() as isize, y)));
-        Line { status: t.status, score, timer }
+        Line { status: t.status, score, timer, arrows: t.dir.is_some() }
     }
 
     /// The arrow code shown on the status line, as "UDLR" letters, up to `max` arrows; stops at the

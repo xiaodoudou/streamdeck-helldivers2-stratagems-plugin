@@ -134,9 +134,30 @@ struct Slot {
     seen_at: Instant,                 // last time its row was on screen
     ends: Option<(Instant, Instant)>, // the cooldown's end as bounded by the timers read on screen
     prefilled: bool,                  // read from the loadout screen, not yet seen in a mission (see Engine::prefill)
+    code_read: Option<(String, u32)>, // the code last read on the open menu, and how many times in a row
+    code: Option<String>,             // the code the key types, once a read was confirmed (see note_code)
 }
 
 const TAKEOVER_SCANS: u32 = 4; // sure readings of another stratagem in a row before it takes a slot
+const CODE_CONFIRM: u32 = 3; // readings of the same code in a row before the key types it
+const MIN_CODE: usize = 3; // arrows of the shortest code (Orbital Precision Strike): fewer is a read cut short
+
+/// The code a key types for a stratagem whose arrows read `read` on the open menu, `codes` being the catalog's (its
+/// main code first); None: the catalog's main code. The reader may stop an arrow early or catch a stray one past the
+/// code's end, so a read fitting one catalog code (either starts with the other) gets that code: which of SSSD
+/// Delivery's two codes the mission gives, say. A read fitting none is a code the catalog doesn't know, taken as read,
+/// unless it reached the capture's edge (CODE_READ arrows), where it may go on, or is too short to be a code.
+pub fn code_from_read(read: &str, codes: &[&str]) -> Option<String> {
+    if codes.contains(&read) {
+        return Some(read.to_string());
+    }
+    let fitting: Vec<&str> = codes.iter().copied().filter(|c| c.starts_with(read) || read.starts_with(c)).collect();
+    match fitting[..] {
+        [one] => Some(one.to_string()),
+        [] if (MIN_CODE..crate::status::CODE_READ).contains(&read.len()) => Some(read.to_string()),
+        _ => None, // fits several (cut short before they part), or can't be trusted
+    }
+}
 
 const ASSUMED_FOR: f32 = 6.0; // seconds an unconfirmed call-in keeps the key active
 const UNSEEN_GRACE: f32 = 20.0; // seconds past the estimated end before an unseen cooldown is taken as over
@@ -160,6 +181,8 @@ pub struct SlotView {
     pub badge: Option<Badge>,
     /// While cooling down: when it is expected to be ready.
     pub ready: Option<ReadyAt>,
+    /// The code the key types, as the open menu showed it (see Slot::note_code); None: the catalog's.
+    pub code: Option<String>,
 }
 
 /// When a cooling slot is expected to be ready: as a timer read on screen says (`timed`, exact to the
@@ -190,9 +213,28 @@ impl Slot {
             seen_at: Instant::now(),
             ends: None,
             prefilled: false,
+            code_read: None,
+            code: None,
         };
         s.observe_fill(r);
         s
+    }
+
+    /// A code read on the open menu. Read the same CODE_CONFIRM times in a row, it decides what the key types (see
+    /// code_from_read), `codes` being the catalog's. Returns whether that changed.
+    fn note_code(&mut self, read: &str, codes: &[&str]) -> bool {
+        let n = match &self.code_read {
+            Some((c, n)) if c == read => n + 1,
+            _ => 1,
+        };
+        self.code_read = Some((read.to_string(), n));
+        if n < CODE_CONFIRM {
+            return false;
+        }
+        let code = code_from_read(read, codes).filter(|c| c != codes[0]); // the catalog's main code needs no telling
+        let changed = code != self.code;
+        self.code = code;
+        changed
     }
 
     /// Record the fill just read; two cooldown readings a few seconds apart give the real drain rate
@@ -253,7 +295,7 @@ impl Slot {
 
     fn view_state(&self) -> SlotView {
         let q = |f: f32| (f.clamp(0.0, 1.0) * 72.0).round() / 72.0;
-        let v = |status, fill| SlotView { index: self.index, status, fill, badge: None, ready: None };
+        let v = |status, fill| SlotView { index: self.index, status, fill, badge: None, ready: None, code: self.code.clone() };
         match self.status {
             Status::Cooldown => {
                 // the end of a cooldown is a sliver too thin to measure, so without a timer the estimate
@@ -486,6 +528,7 @@ impl Engine {
                 fill_top: 0.0,
                 badge: None,
                 timer: None,
+                code: None,
             };
             let mut s = Slot::new(&row, self.cooldown_s(index));
             s.prefilled = true;
@@ -616,6 +659,10 @@ impl Engine {
                     s.badge = r.badge.clone();
                     changed = true;
                 }
+                if let Some(read) = &r.code {
+                    let codes: Vec<&str> = self.matcher.catalog[s.index].codes().collect();
+                    changed |= s.note_code(read, &codes);
+                }
             }
         }
         changed
@@ -706,12 +753,13 @@ impl Engine {
             let after = self.read_open_menu(cfg, wait);
             input::up(&cfg.menu_key)?;
             self.menu_open_ms = Some(pressed.elapsed().as_millis() as u64);
-            vec![before, after?]
+            let (after, agreed) = after?;
+            [Some(before), agreed, Some(after)].into_iter().flatten().collect()
         } else {
             let hold = cfg.key_hold_ms.max(MENU_TAP_MS);
             input::tap(&cfg.menu_key, hold)?;
             let pressed = Instant::now();
-            let mut after = self.read_open_menu(cfg, wait)?;
+            let (mut after, agreed) = self.read_open_menu(cfg, wait)?;
             let was_open = before.len() >= MENU_OPEN_ROWS;
             if !was_open && after.len() < MENU_OPEN_ROWS {
                 // not open (yet): the game may still be ignoring the key, or be slow to show the menu
@@ -733,7 +781,7 @@ impl Engine {
                     }
                     input::tap(&cfg.menu_key, hold)?;
                 }
-                vec![before, after]
+                [Some(before), agreed, Some(after)].into_iter().flatten().collect()
             } else {
                 // the game ignored the tap: nothing to put back
                 vec![before, after]
@@ -744,15 +792,18 @@ impl Engine {
     }
 
     /// Right after the menu key: read the screen every MENU_POLL until the menu has settled (menu_settled), or for
-    /// `max` at most; the last reading.
-    fn read_open_menu(&mut self, cfg: &Config, max: Duration) -> Result<Vec<Row>, String> {
+    /// `max` at most; the last reading, and the one before it when the two agree (another reading of the codes).
+    fn read_open_menu(&mut self, cfg: &Config, max: Duration) -> Result<(Vec<Row>, Option<Vec<Row>>), String> {
         let start = Instant::now();
         let mut last: Option<Vec<Row>> = None;
         loop {
             sleep(MENU_POLL);
             let rows = self.read(cfg)?;
-            if menu_settled(last.as_deref(), &rows) || start.elapsed() >= max {
-                return Ok(rows);
+            if menu_settled(last.as_deref(), &rows) {
+                return Ok((rows, last));
+            }
+            if start.elapsed() >= max {
+                return Ok((rows, None));
             }
             last = Some(rows);
         }
@@ -872,7 +923,7 @@ mod tests {
     }
 
     fn row(index: usize, slot: usize, status: Status) -> Row {
-        Row { index, score: 0.95, sure: true, slot, status, fill_bottom: 0.0, fill_top: 0.0, badge: None, timer: None }
+        Row { index, score: 0.95, sure: true, slot, status, fill_bottom: 0.0, fill_top: 0.0, badge: None, timer: None, code: None }
     }
 
     fn badge(hash: u64) -> Badge {
@@ -1578,6 +1629,37 @@ mod tests {
         e.last_hud = Some(ago(LOBBY_RESET.as_secs_f32() + 1.0));
         assert!(feed(&mut e, &[]), "the mission is over");
         assert!(e.chosen().is_empty());
+    }
+
+    #[test]
+    fn a_code_read_gets_the_catalog_code_it_fits_or_stands_as_read() {
+        let sssd = ["DDDDDUU", "DDDUU"];
+        assert_eq!(code_from_read("DDDDDUU", &sssd).as_deref(), Some("DDDDDUU"));
+        assert_eq!(code_from_read("DDDUU", &sssd).as_deref(), Some("DDDUU"), "its other code");
+        assert_eq!(code_from_read("DDDDD", &sssd).as_deref(), Some("DDDDDUU"), "cut short, fitting one only");
+        assert_eq!(code_from_read("DDD", &sssd), None, "cut short before the two part");
+        assert_eq!(code_from_read("RDURDL", &["RDURD"]).as_deref(), Some("RDURD"), "a stray arrow past the end");
+        assert_eq!(code_from_read("UDDUUDDU", &["UDDUUDDUU"]).as_deref(), Some("UDDUUDDUU"), "9 arrows read to the capture's edge");
+        assert_eq!(code_from_read("LLRRU", &["RDURD"]).as_deref(), Some("LLRRU"), "a code the catalog doesn't know");
+        assert_eq!(code_from_read("LLRRUUDD", &["RDURD"]), None, "unknown and at the capture's edge: it may go on");
+        assert_eq!(code_from_read("LR", &["RDURD"]), None, "too short to be a code");
+    }
+
+    #[test]
+    fn a_code_read_on_the_menu_is_typed_once_confirmed() {
+        let mut e = engine();
+        let sssd = idx(&e, "SSSD Delivery");
+        let shown = |code: &str| Row { code: Some(code.into()), ..row(sssd, 0, Status::Ready) };
+        feed_n(&mut e, &[row(sssd, 0, Status::Ready)], 3);
+        assert_eq!(view(&e, 0).code, None, "no code read: the key types the catalog's");
+        feed_n(&mut e, &[shown("DDDUU")], CODE_CONFIRM as usize - 1);
+        assert_eq!(view(&e, 0).code, None, "not read often enough yet");
+        assert!(feed(&mut e, &[shown("DDDUU")]), "the code confirmed changes the key");
+        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDUU"), "SSSD's other code, as the menu shows it");
+        feed(&mut e, &[shown("DDDU")]);
+        assert_eq!(view(&e, 0).code.as_deref(), Some("DDDUU"), "one stray reading changes nothing");
+        feed_n(&mut e, &[shown("DDDDDUU")], CODE_CONFIRM as usize);
+        assert_eq!(view(&e, 0).code, None, "the main code confirmed: the catalog's again");
     }
 
     #[test]

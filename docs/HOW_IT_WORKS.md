@@ -99,6 +99,7 @@ languages/             screenshots for new game languages, see TRANSLATIONS.md
 | Tool | What it makes |
 |---|---|
 | `fetch_wiki.py` | Updates the names, codes and cooldowns of `data/stratagems.json` from the wiki, and lists stratagems the wiki has and the file lacks |
+| `extract_icons.py` | The icon textures in the game's files that `data/icons/` doesn't have yet, in `dist/icons/` with a sheet to pick them by eye: how a new stratagem gets its icon (reads the game's archives, never writes to them) |
 | `make_status_templates.py` | `data/status/`, the words, arrows and digits, cut out of four reference screenshots |
 | `make_png_icons.py` | The images in `plugin/.../imgs/`: the plugin icon, the white category and action icons, and the key images, all from the original drawings in `tools/icon_src/` |
 | `preview_icons.py` | A sheet of the key images side by side, to check them by eye |

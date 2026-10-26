@@ -6,7 +6,7 @@
   "Description": "Shows the stratagems read from your Helldivers 2 loadout and enters their codes.",
   "URL": "https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin",
   "SupportURL": "https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/issues",
-  "Version": "0.5.4.0",
+  "Version": "0.5.5.0",
   "Icon": "imgs/plugin",
   "CodePath": "hd2-plugin.exe",
   "CodePathWin": "hd2-plugin.exe",

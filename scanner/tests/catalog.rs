@@ -39,18 +39,22 @@ fn names_are_unique() {
 #[test]
 fn codes_use_only_arrows() {
     for s in entries() {
-        assert!(!s.code.is_empty() && s.code.chars().all(|c| "UDLR".contains(c)), "{}: {:?}", s.name, s.code);
-        assert!(s.code.len() <= 10, "{}: code of {} arrows", s.name, s.code.len());
+        for code in s.codes() {
+            assert!(!code.is_empty() && code.chars().all(|c| "UDLR".contains(c)), "{}: {:?}", s.name, code);
+            assert!(code.len() <= 10, "{}: code of {} arrows", s.name, code.len());
+        }
     }
 }
 
 /// The game gives every stratagem its own code; the one exception shares its icon too, so the
-/// scanner treats the two as interchangeable.
+/// scanner treats the two as interchangeable. A stratagem's other codes ("also") count as its own.
 #[test]
 fn codes_are_unique_except_upload_data_and_reinforcement_pods() {
     let mut by_code: HashMap<String, Vec<String>> = HashMap::new();
     for s in entries() {
-        by_code.entry(s.code).or_default().push(s.name);
+        for code in s.codes() {
+            by_code.entry(code.to_string()).or_default().push(s.name.clone());
+        }
     }
     let mut shared: Vec<Vec<String>> = by_code.into_values().filter(|v| v.len() > 1).collect();
     for v in &mut shared {
@@ -136,17 +140,22 @@ fn entries_sharing_an_icon_are_lookalikes() {
 }
 
 /// resolve_lookalike reads at most CODE_READ arrows and accepts a read that is a prefix of a code
-/// (or the other way round): lookalikes must have codes within that length that never fit each other.
+/// (or the other way round): lookalikes must have codes within that length that never fit each other,
+/// whichever of its codes each shows.
 #[test]
 fn lookalike_codes_can_be_told_apart_by_the_code_reader() {
     let m = Matcher::load(&Data::Dir(data())).expect("catalog");
-    let code: HashMap<String, String> = m.catalog.iter().map(|s| (s.name.clone(), s.code.clone())).collect();
+    let codes: HashMap<String, Vec<String>> = m.catalog.iter().map(|s| (s.name.clone(), s.codes().map(str::to_string).collect())).collect();
     for g in lookalike_groups(&m) {
         for a in &g {
-            assert!(code[a].len() <= CODE_READ, "{a}: {} arrows, the reader stops at {CODE_READ}", code[a].len());
-            for b in g.iter().filter(|b| *b != a && code[*b] != code[a]) {
-                let fits = code[b].starts_with(&code[a]) || code[a].starts_with(&code[b]);
-                assert!(!fits, "{a} ({}) and {b} ({}) cannot be told apart", code[a], code[b]);
+            for ca in &codes[a] {
+                assert!(ca.len() <= CODE_READ, "{a}: {} arrows, the reader stops at {CODE_READ}", ca.len());
+                for b in g.iter().filter(|b| *b != a && codes[*b] != codes[a]) {
+                    for cb in &codes[b] {
+                        let fits = cb.starts_with(ca.as_str()) || ca.starts_with(cb.as_str());
+                        assert!(!fits, "{a} ({ca}) and {b} ({cb}) cannot be told apart");
+                    }
+                }
             }
         }
     }

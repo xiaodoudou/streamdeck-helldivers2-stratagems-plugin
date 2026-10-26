@@ -1,7 +1,8 @@
 """Update the names, codes and cooldowns of data/stratagems.json from helldivers.wiki.gg.
 
 Each stratagem keeps its "type" and "icon", which name the game's own texture in data/icons/: those come from the
-game's files, not from the wiki. A stratagem the wiki lists and the file lacks is reported and left out until its
+game's files, not from the wiki. It keeps its "also" codes too, the other codes the game gives it on some missions,
+which the wiki's list doesn't show (SSSD Delivery's article has both of its codes; the list, one). A stratagem the wiki lists and the file lacks is reported and left out until its
 texture is added.
 """
 import html
@@ -42,13 +43,16 @@ def main() -> int:
         if name not in known:
             new.append(name)
             continue
-        out.append({
+        entry = {
             "name": name,
             "code": "".join(ARROW[a] for a in arrows),
             "cooldown": re.sub(r"<[^>]+>", "", cells[3]).strip(),
             "type": known[name]["type"],
             "icon": known[name]["icon"],
-        })
+        }
+        if "also" in known[name]:  # other codes the game gives it on some missions, which the list doesn't show
+            entry["also"] = known[name]["also"]
+        out.append(entry)
 
     CATALOG.write_text(json.dumps(out, indent=2), encoding="utf-8", newline="\n")
     print(f"{len(out)} stratagems")

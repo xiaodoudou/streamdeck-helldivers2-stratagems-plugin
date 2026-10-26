@@ -781,7 +781,10 @@
     "code": "DDDDDUU",
     "cooldown": "8s",
     "type": "mission",
-    "icon": "Upload_Data_Stratagem_Icon_Background.svg"
+    "icon": "Upload_Data_Stratagem_Icon_Background.svg",
+    "also": [
+      "DDDUU"
+    ]
   },
   {
     "name": "Upload Data",

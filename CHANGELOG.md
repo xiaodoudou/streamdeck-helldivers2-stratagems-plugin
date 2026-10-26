@@ -4,6 +4,16 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-26
+
+### Changed
+
+- **Keys type the code the menu shows.** Each time the stratagem menu is open, the plugin reads the arrows of every stratagem it lists, and once it has read a code the same three times in a row, that stratagem's keys type it rather than the code the plugin ships with. A code the game changes is followed without waiting for an update; codes the plugin's list knows win over a read that is one arrow short or long.
+
+### Fixed
+
+- **SSSD Delivery on every objective.** The game gives it ↓↓↓↑↑ on some objectives and ↓↓↓↓↓↑↑ on others; 0.5.4 knew only the second, and the plugin before it only the first. Both are recognised now, and the key types the one the menu shows.
+
 ## [0.5.4] - 2026-10-26
 
 ### Added
@@ -97,7 +107,8 @@ The first version.
 - **A Clear Stratagem Slots key** that empties every slot until the next scan.
 - **Settings on the Scan key**, shared by every key: the scan period, the inputs, the timings, and the game's resolution for when its window can't be measured (the panel shows the size the plugin found).
 
-[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.4...dev
+[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.5...dev
+[0.5.5]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.1...v0.5.2
