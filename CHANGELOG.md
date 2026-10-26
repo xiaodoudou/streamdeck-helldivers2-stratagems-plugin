@@ -4,6 +4,8 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-10-26
+
 ### Added
 
 - **Four more stratagems.** Eagle Fly By, Orbital Confetti, the AMW-20 Apex and the LAS-44 Nova are read and shown on the keys, with their icons taken from the game's files like the others. A mission stratagem the plugin didn't know, such as Eagle Fly By, left its slot key on the signal icon for the whole mission.
@@ -95,7 +97,8 @@ The first version.
 - **A Clear Stratagem Slots key** that empties every slot until the next scan.
 - **Settings on the Scan key**, shared by every key: the scan period, the inputs, the timings, and the game's resolution for when its window can't be measured (the panel shows the size the plugin found).
 
-[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.3...dev
+[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.4...dev
+[0.5.4]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.0...v0.5.1
