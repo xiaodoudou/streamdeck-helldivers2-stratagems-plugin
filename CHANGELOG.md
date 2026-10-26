@@ -4,6 +4,14 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+### Changed
+
+- **Keys type the code the menu shows.** Each time the stratagem menu is open, the plugin reads the arrows of every stratagem it lists, and once it has read a code the same three times in a row, that stratagem's keys type it rather than the code the plugin ships with. A code the game changes is followed without waiting for an update; codes the plugin's list knows win over a read that is one arrow short or long.
+
+### Fixed
+
+- **SSSD Delivery on every objective.** The game gives it ↓↓↓↑↑ on some objectives and ↓↓↓↓↓↑↑ on others; 0.5.4 knew only the second, and the plugin before it only the first. Both are recognised now, and the key types the one the menu shows.
+
 ## [0.5.4] - 2026-10-26
 
 ### Added

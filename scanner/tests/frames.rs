@@ -11,6 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use hd_scanner::data::Data;
+use hd_scanner::engine::code_from_read;
 use hd_scanner::img::Img;
 use hd_scanner::matcher::{Matcher, Row, column_box};
 use hd_scanner::status::Status::{self, *};
@@ -242,6 +243,27 @@ fn assert_field(name: &str, slot: usize, field: Field) {
 fn assert_misread_fixed(name: &str, slot: usize, field: Field) {
     assert!(known_misread(name, slot, field));
     assert_field(name, slot, field);
+}
+
+/// What a key would type from the codes the rows read (see code_from_read) is, on every frame, the stratagem's own
+/// code: the catalog's, as these frames predate any code change. That holds for a code shown cut short (the Warp
+/// Pack's first four arrows on closed_ready_row) and for a stray arrow read past one (Resupply on menu_open). A row
+/// showing a word reads no code.
+#[test]
+fn codes_read_with_the_rows_resolve_to_the_stratagems_own() {
+    let m = Matcher::load(&Data::Dir(data_dir())).expect("catalog");
+    let mut bad = Vec::new();
+    for f in FRAMES {
+        for s in f.rows {
+            let Some(r) = reads()[f.name].rows.iter().find(|r| r.slot == s.slot && m.catalog[r.index].name == s.name) else { continue };
+            let st = &m.catalog[r.index];
+            let typed = r.code.as_ref().map(|c| code_from_read(c, &st.codes().collect::<Vec<_>>()).unwrap_or(st.code.clone()));
+            if typed.as_deref() != s.code.map(|_| st.code.as_str()) {
+                bad.push(format!("{} slot {} {}: shows {:?}, read {:?}, would type {typed:?}", f.name, s.slot, s.name, s.code, r.code));
+            }
+        }
+    }
+    assert!(bad.is_empty(), "\n{}", bad.join("\n"));
 }
 
 #[test]

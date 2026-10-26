@@ -44,9 +44,18 @@ pub struct Stratagem {
     #[serde(rename = "type")]
     pub kind: Kind,
     pub icon: String,
+    /// Other codes the game gives it on some missions (SSSD Delivery has one for Super Earth objectives and one
+    /// for Automaton ones); `code` is the one typed when the menu hasn't shown which (see Engine::code_from_read).
+    #[serde(default)]
+    pub also: Vec<String>,
 }
 
 impl Stratagem {
+    /// Every code the game may show for it, `code` first.
+    pub fn codes(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.code.as_str()).chain(self.also.iter().map(String::as_str))
+    }
+
     pub fn png(&self) -> String {
         let stem = Path::new(&self.icon).file_stem().unwrap_or_default().to_string_lossy().into_owned();
         format!("{stem}.png")
@@ -131,6 +140,8 @@ pub struct Row {
     pub badge: Option<Badge>,
     /// Seconds left on the status line's timer ("Cooldown T-04:50", "Inbound T-00:07"), when it shows one.
     pub timer: Option<u32>,
+    /// The arrows of its code, as far as the capture reaches (CODE_READ), when the open menu shows them.
+    pub code: Option<String>,
 }
 
 /// The count badge's digits as a mask (true = dark digit pixel), trimmed to the digits, and the number they show when
@@ -387,7 +398,12 @@ impl Matcher {
                     let sized = self.sized.as_ref().expect("prepared");
                     let (fill_bottom, fill_top) = fill_profile(&win, dx, dy, &sized.images[index], size);
                     let badge = read_badge(col, f, ROW0_Y + ROW_PITCH * k as f64, origin);
-                    rows.push(Row { index, score, sure, slot: k, status: line.status, fill_bottom, fill_top, badge, timer: line.timer })
+                    let code = line
+                        .arrows
+                        .then(|| self.status.read_arrows(col, f, size, top, origin, status::CODE_READ))
+                        .filter(|c| !c.is_empty());
+                    let timer = line.timer;
+                    rows.push(Row { index, score, sure, slot: k, status: line.status, fill_bottom, fill_top, badge, timer, code })
                 }
                 _ => {
                     gap = true;
@@ -421,7 +437,7 @@ impl Matcher {
         // either may be the longer: reading can stop early, or pick up a stray arrow past the code's end
         let fits = |c: &str| c.starts_with(&code) || code.starts_with(c);
         let matching: Vec<usize> =
-            if code.is_empty() { vec![] } else { group.iter().copied().filter(|&i| fits(&self.catalog[i].code)).collect() };
+            if code.is_empty() { vec![] } else { group.iter().copied().filter(|&i| self.catalog[i].codes().any(fits)).collect() };
         // lookalikes with the very same code (Upload Data, Reinforcement Pods) are interchangeable
         let same_code = !matching.is_empty() && matching.iter().all(|&i| self.catalog[i].code == self.catalog[matching[0]].code);
         let last = self.last.get(&k).map(|l| l.0);
@@ -865,7 +881,8 @@ mod tests {
     #[test]
     fn png_name_comes_from_the_svg_name() {
         let png = |icon: &str| {
-            Stratagem { name: String::new(), code: String::new(), cooldown: String::new(), kind: Kind::Supply, icon: icon.into() }.png()
+            let (name, code, cooldown, also) = (String::new(), String::new(), String::new(), vec![]);
+            Stratagem { name, code, cooldown, kind: Kind::Supply, icon: icon.into(), also }.png()
         };
         assert_eq!(png("Reinforce_Stratagem_Icon_Background.svg"), "Reinforce_Stratagem_Icon_Background.png");
         assert_eq!(png("W.A.S.P._Launcher_Stratagem_Icon_Background.svg"), "W.A.S.P._Launcher_Stratagem_Icon_Background.png");
@@ -1073,6 +1090,7 @@ mod tests {
         let mut m = matcher();
         for (icon, code, want) in [
             ("Upload Data", "DDDDDUU", &["SSSD Delivery"][..]),
+            ("Upload Data", "DDDUU", &["SSSD Delivery"]), // its other code, on the other kind of objective
             ("SSSD Delivery", "LRUUU", &["Upload Data", "Reinforcement Pods"]), // same code: interchangeable
             ("Hive Breaker Drill", "LLLUDRDD", &["Aquifer Drill"]),
             ("Aquifer Drill", "DDLRDD", &["Prospecting Drill"]),

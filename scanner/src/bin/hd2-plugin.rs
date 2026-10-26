@@ -1009,8 +1009,9 @@ async fn main() {
                                         vec![MessageOut::ShowAlert { context }]
                                     }
                                     Some(v) => {
-                                        let code = p.catalog[v.index].code.clone();
-                                        log(format!("calling {} ({code})", p.catalog[v.index].name));
+                                        let code = v.code.clone().unwrap_or_else(|| p.catalog[v.index].code.clone());
+                                        let shown = if v.code.is_some() { ", as the menu shows it" } else { "" };
+                                        log(format!("calling {} ({code}{shown})", p.catalog[v.index].name));
                                         let (engine, wake) = (engine.clone(), wake.clone());
                                         tokio::task::spawn_blocking(move || {
                                             let result = engine::fire(&code, &c, c.auto_throw);
@@ -1037,7 +1038,7 @@ async fn main() {
                                     .iter()
                                     .filter_map(|&k| if let Place::At(s) = p.loadout_slot(k) { p.loadout.get(s).cloned().flatten() } else { None })
                                     .filter(|v| callable(v, now))
-                                    .map(|v| (v.index, p.catalog[v.index].code.clone(), p.catalog[v.index].name.clone()))
+                                    .map(|v| (v.index, v.code.unwrap_or_else(|| p.catalog[v.index].code.clone()), p.catalog[v.index].name.clone()))
                                     .collect();
                                 if c.throw_key.is_empty() {
                                     log("stratagem setup refused: it throws each stratagem, so it needs the throw key (set it on the Scan key)");
@@ -1196,7 +1197,7 @@ mod tests {
     }
 
     fn sv(index: usize, status: Status, fill: f32, badge: Option<Badge>) -> SlotView {
-        SlotView { index, status, fill, badge, ready: None }
+        SlotView { index, status, fill, badge, ready: None, code: None }
     }
 
     fn plugin(loadout: Loadout) -> Plugin {
@@ -1494,7 +1495,16 @@ mod tests {
         let index = |name: &str| all.iter().position(|s| s.name == name).unwrap_or_else(|| panic!("no {name}"));
         let loadout = menu
             .iter()
-            .map(|&n| (!n.is_empty()).then(|| SlotView { index: index(n), status: Status::Ready, fill: 0.0, badge: None, ready: None }))
+            .map(|&n| {
+                (!n.is_empty()).then(|| SlotView {
+                    index: index(n),
+                    status: Status::Ready,
+                    fill: 0.0,
+                    badge: None,
+                    ready: None,
+                    code: None,
+                })
+            })
             .collect();
         let mut p = plugin(loadout);
         p.catalog = all;
@@ -1635,7 +1645,7 @@ mod tests {
     #[test]
     fn a_press_goes_through_unless_the_stratagem_is_busy() {
         let now = Instant::now();
-        let v = |status: Status| SlotView { index: 0, status, fill: 0.5, badge: None, ready: None };
+        let v = |status: Status| SlotView { index: 0, status, fill: 0.5, badge: None, ready: None, code: None };
         assert!(callable(&v(Status::Ready), now) && callable(&v(Status::Unknown), now));
         for status in [Status::Cooldown, Status::Unavailable, Status::Active] {
             assert!(!callable(&v(status), now), "{status:?}");
@@ -1878,7 +1888,7 @@ mod tests {
                     _ => (Status::Ready, 0.0),
                 };
                 let badge = if status == Status::Unavailable { None } else { r.badge };
-                loadout[r.slot] = Some(SlotView { index: r.index, status, fill, badge, ready: None });
+                loadout[r.slot] = Some(SlotView { index: r.index, status, fill, badge, ready: None, code: None });
             }
             p.loadout = loadout;
             scenes.insert(fixture.into(), json!(shoot(&mut p)));
