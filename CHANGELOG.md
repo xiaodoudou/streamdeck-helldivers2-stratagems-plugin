@@ -4,6 +4,10 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+### Fixed
+
+- **Keys that went into cooldown too early.** A stratagem thrown by hand often dropped out of the HUD while it was still on its way, and the plugin took that for a landing: the key started its cooldown, then flipped back to active when the HUD showed it again. A stratagem now counts as landed only once the HUD has shown it inbound or impacting and its timer has run out; one that drops out before that is given 15 seconds.
+
 ## [0.5.5] - 2026-10-26
 
 ### Changed

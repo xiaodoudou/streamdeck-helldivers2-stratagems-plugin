@@ -142,6 +142,8 @@ pub struct Row {
     pub timer: Option<u32>,
     /// The arrows of its code, as far as the capture reaches (CODE_READ), when the open menu shows them.
     pub code: Option<String>,
+    /// On its way and past "Activating": the status line says "Inbound" or "Impact" (see Engine::update).
+    pub landed: bool,
 }
 
 /// The count badge's digits as a mask (true = dark digit pixel), trimmed to the digits, and the number they show when
@@ -403,7 +405,8 @@ impl Matcher {
                         .then(|| self.status.read_arrows(col, f, size, top, origin, status::CODE_READ))
                         .filter(|c| !c.is_empty());
                     let timer = line.timer;
-                    rows.push(Row { index, score, sure, slot: k, status: line.status, fill_bottom, fill_top, badge, timer, code })
+                    let landed = line.landed;
+                    rows.push(Row { index, score, sure, slot: k, status: line.status, fill_bottom, fill_top, badge, timer, code, landed })
                 }
                 _ => {
                     gap = true;
