@@ -4,6 +4,8 @@ What changed in each version of the plugin, newest first. The versions follow [s
 
 ## [Unreleased]
 
+## [0.5.6] - 2026-11-05
+
 ### Fixed
 
 - **Keys that went into cooldown too early.** A stratagem thrown by hand often dropped out of the HUD while it was still on its way, and the plugin took that for a landing: the key started its cooldown, then flipped back to active when the HUD showed it again. A stratagem now counts as landed only once the HUD has shown it inbound or impacting and its timer has run out; one that drops out before that is given 15 seconds.
@@ -111,7 +113,8 @@ The first version.
 - **A Clear Stratagem Slots key** that empties every slot until the next scan.
 - **Settings on the Scan key**, shared by every key: the scan period, the inputs, the timings, and the game's resolution for when its window can't be measured (the panel shows the size the plugin found).
 
-[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.5...dev
+[Unreleased]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.6...dev
+[0.5.6]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/xiaodoudou/streamdeck-helldivers2-stratagems-plugin/compare/v0.5.2...v0.5.3
