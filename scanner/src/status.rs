@@ -40,6 +40,7 @@ struct Template {
     dir: Option<char>,  // arrow templates: the direction letter
     timer: Option<f64>, // word templates followed by a timer: where its first digit starts, past the word
     digit: Option<u32>, // digit templates: the digit
+    landed: bool,       // "Inbound" and "Impact": the beacon is down, the pod on its way
     x: f64,
     w: usize,
     h: usize,
@@ -52,6 +53,7 @@ struct Raw {
     dir: Option<char>,
     timer: Option<f64>,
     digit: Option<u32>,
+    landed: bool,
     x: f64,
     img: Img,
 }
@@ -70,6 +72,8 @@ pub struct Line {
     pub timer: Option<u32>,
     /// Ready because the line shows the code's arrows (the menu is open), not the word "Ready": worth reading them.
     pub arrows: bool,
+    /// Active and past "Activating": the line says "Inbound" or "Impact", so the beacon is down and the pod coming.
+    pub landed: bool,
 }
 
 /// Right edge (at 1440p) the capture must reach for the status words and the first CODE_READ arrows.
@@ -99,10 +103,21 @@ impl StatusReader {
         let load = |name: &str| data.png(&format!("status/{name}.png")).ok();
         let mut raw: Vec<Raw> = table
             .iter()
-            .filter_map(|&(name, status, dir, timer, x)| load(name).map(|img| Raw { status, dir, timer, digit: None, x, img }))
+            .filter_map(|&(name, status, dir, timer, x)| {
+                let landed = matches!(name, "word_inbound" | "word_impact");
+                load(name).map(|img| Raw { status, dir, timer, digit: None, landed, x, img })
+            })
             .collect();
         raw.extend((0..10).filter_map(|d| {
-            load(&format!("digit_{d}")).map(|img| Raw { status: Status::Unknown, dir: None, timer: None, digit: Some(d), x: 0.0, img })
+            load(&format!("digit_{d}")).map(|img| Raw {
+                status: Status::Unknown,
+                dir: None,
+                timer: None,
+                digit: Some(d),
+                landed: false,
+                x: 0.0,
+                img,
+            })
         }));
         StatusReader { raw, scaled: None }
     }
@@ -121,7 +136,7 @@ impl StatusReader {
                 v.iter_mut().for_each(|p| *p -= mean);
                 let n = v.iter().map(|p| p * p).sum::<f32>().sqrt().max(1e-3);
                 v.iter_mut().for_each(|p| *p /= n);
-                Template { status: r.status, dir: r.dir, timer: r.timer, digit: r.digit, x: r.x, w, h, v }
+                Template { status: r.status, dir: r.dir, timer: r.timer, digit: r.digit, landed: r.landed, x: r.x, w, h, v }
             })
             .collect();
         self.scaled = Some((size, tpls));
@@ -130,7 +145,9 @@ impl StatusReader {
     /// The status line of the row whose icon top is at `top` (1440p units), in a capture starting at `origin`.
     pub fn read(&mut self, col: &Img, f: f64, size: usize, top: f64, origin: (usize, usize)) -> Line {
         self.prepare(f, size);
-        let Some((_, tpls)) = &self.scaled else { return Line { status: Status::Unknown, score: 0.0, timer: None, arrows: false } };
+        let Some((_, tpls)) = &self.scaled else {
+            return Line { status: Status::Unknown, score: 0.0, timer: None, arrows: false, landed: false };
+        };
         let mut best: Option<(&Template, f32, isize, isize)> = None;
         for t in tpls.iter().filter(|t| t.digit.is_none()) {
             let (c, x, y) = near(col, t, at(f, t.x, top, origin), slack(f));
@@ -138,9 +155,11 @@ impl StatusReader {
                 best = Some((t, c, x, y));
             }
         }
-        let Some((t, score, x, y)) = best else { return Line { status: Status::Unknown, score: STATUS_MIN, timer: None, arrows: false } };
+        let Some((t, score, x, y)) = best else {
+            return Line { status: Status::Unknown, score: STATUS_MIN, timer: None, arrows: false, landed: false };
+        };
         let timer = t.timer.and_then(|after| read_timer(col, f, tpls, (x + (after * f).round() as isize, y)));
-        Line { status: t.status, score, timer, arrows: t.dir.is_some() }
+        Line { status: t.status, score, timer, arrows: t.dir.is_some(), landed: t.landed }
     }
 
     /// The arrow code shown on the status line, as "UDLR" letters, up to `max` arrows; stops at the

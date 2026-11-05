@@ -136,6 +136,7 @@ struct Slot {
     prefilled: bool,                  // read from the loadout screen, not yet seen in a mission (see Engine::prefill)
     code_read: Option<(String, u32)>, // the code last read on the open menu, and how many times in a row
     code: Option<String>,             // the code the key types, once a read was confirmed (see note_code)
+    lands: Option<Instant>,           // on its way, seen past "Activating": when the pod is due (see Engine::update)
 }
 
 const TAKEOVER_SCANS: u32 = 4; // sure readings of another stratagem in a row before it takes a slot
@@ -162,8 +163,12 @@ pub fn code_from_read(read: &str, codes: &[&str]) -> Option<String> {
 const ASSUMED_FOR: f32 = 6.0; // seconds an unconfirmed call-in keeps the key active
 const UNSEEN_GRACE: f32 = 20.0; // seconds past the estimated end before an unseen cooldown is taken as over
 // The closed HUD drops a row once its call-in has landed and only brings it back when ready again,
-// so an in-flight row gone this long (HUD still up) means its cooldown has started.
+// so an in-flight row gone this long (HUD still up) means its cooldown has started, once it has shown "Inbound" or
+// "Impact" and the Inbound timer has run out. A row seen only "Activating" also leaves the HUD while the ball is
+// thrown and flying, until the beacon lands and "Inbound" shows: gone, it is taken as landed only after
+// ACTIVATING_GONE, for a call-in whose Inbound line was never read.
 const ACTIVE_GONE: Duration = Duration::from_millis(1500);
+const ACTIVATING_GONE: Duration = Duration::from_secs(15);
 // The cooldown timer shows whole seconds, and whether it rounds the time left down or up is not known:
 // "T-00:09" means 9 to 9 + TIMER_ROUNDING seconds left. The key counts down to the latest, never early.
 const TIMER_ROUNDING: f32 = 1.0;
@@ -215,6 +220,7 @@ impl Slot {
             prefilled: false,
             code_read: None,
             code: None,
+            lands: None,
         };
         s.observe_fill(r);
         s
@@ -445,6 +451,7 @@ impl Engine {
             Some(s) if s.status != Status::Active => {
                 (s.status, s.next, s.fill, s.fill_at, s.ends) = (Status::Active, None, 0.0, Instant::now(), None);
                 s.assumed = Some(Instant::now());
+                s.lands = None; // a new call-in: not past "Activating" yet
                 true
             }
             _ => false,
@@ -529,6 +536,7 @@ impl Engine {
                 badge: None,
                 timer: None,
                 code: None,
+                landed: false,
             };
             let mut s = Slot::new(&row, self.cooldown_s(index));
             s.prefilled = true;
@@ -631,6 +639,17 @@ impl Engine {
                 if r.status == s.status {
                     s.observe_fill(r);
                 }
+                if s.status != Status::Active {
+                    s.lands = None;
+                } else if r.status == Status::Active && r.landed {
+                    // the Inbound timer says when the pod lands; without one (Impact, or a timer that didn't read),
+                    // it is landing now, unless a timer read earlier said later
+                    let now = Instant::now();
+                    s.lands = match r.timer {
+                        Some(secs) => Some(now + Duration::from_secs(secs as u64)),
+                        None => Some(s.lands.unwrap_or(now)),
+                    };
+                }
                 // learn the real cooldown from one seen whole: ship upgrades make it shorter than the wiki's
                 match (before, s.status) {
                     // a call-in seen on its way, then cooling, has just started its cooldown; otherwise only a
@@ -726,9 +745,16 @@ impl Engine {
         changed |= self.note_statuses(rows, cfg.confirm_scans);
         if !rows.is_empty() {
             for s in self.slots.values_mut() {
-                if s.status == Status::Active && s.assumed.is_none() && s.seen_at.elapsed() > ACTIVE_GONE {
-                    (s.status, s.next, s.fill, s.fill_at, s.rate, s.ends) = (Status::Cooldown, None, 1.0, s.seen_at, None, None);
-                    s.cooldown_from = Some(s.seen_at);
+                let gone = s.seen_at.elapsed();
+                let landed = match s.lands {
+                    Some(at) => gone > ACTIVE_GONE && Instant::now() >= at,
+                    None => gone > ACTIVATING_GONE, // seen only "Activating": most likely thrown and in the air
+                };
+                if s.status == Status::Active && s.assumed.is_none() && landed {
+                    // cooling from when the pod landed, as the Inbound timer said, or from when the row went
+                    let from = s.lands.map_or(s.seen_at, |at| at.max(s.seen_at));
+                    (s.status, s.next, s.fill, s.fill_at, s.rate, s.ends) = (Status::Cooldown, None, 1.0, from, None, None);
+                    (s.cooldown_from, s.lands) = (Some(from), None);
                     changed = true;
                 }
             }
@@ -923,7 +949,19 @@ mod tests {
     }
 
     fn row(index: usize, slot: usize, status: Status) -> Row {
-        Row { index, score: 0.95, sure: true, slot, status, fill_bottom: 0.0, fill_top: 0.0, badge: None, timer: None, code: None }
+        Row {
+            index,
+            score: 0.95,
+            sure: true,
+            slot,
+            status,
+            fill_bottom: 0.0,
+            fill_top: 0.0,
+            badge: None,
+            timer: None,
+            code: None,
+            landed: false,
+        }
     }
 
     fn badge(hash: u64) -> Badge {
@@ -1330,7 +1368,7 @@ mod tests {
     fn an_active_row_gone_from_the_hud_starts_its_cooldown() {
         let mut e = engine();
         let (reinforce, laser) = (idx(&e, "Reinforce"), idx(&e, "Orbital Laser"));
-        let inbound = Row { fill_top: 0.6, ..row(laser, 3, Status::Active) };
+        let inbound = Row { fill_top: 0.6, landed: true, ..row(laser, 3, Status::Active) };
         feed_n(&mut e, &[row(reinforce, 0, Status::Ready), inbound], 2);
         assert_eq!(view(&e, 3).status, Status::Active);
         // gone for less than ACTIVE_GONE: still in flight
@@ -1339,13 +1377,48 @@ mod tests {
         assert_eq!(view(&e, 3).status, Status::Active);
         // gone longer, while the HUD still shows other rows: landed, cooling down from full
         let seen = ago(ACTIVE_GONE.as_secs_f32() + 0.5);
-        e.slots.get_mut(&3).unwrap().seen_at = seen;
+        let s = e.slots.get_mut(&3).unwrap();
+        (s.seen_at, s.lands) = (seen, Some(seen)); // last seen inbound, without a timer: landing then
         assert!(feed(&mut e, &[row(reinforce, 0, Status::Ready)]));
         let v = view(&e, 3);
         assert_eq!(v.status, Status::Cooldown);
         assert!(v.fill > 0.95, "cooldown starts full, fill {}", v.fill);
         let s = &e.slots[&3];
         assert_eq!((s.cooldown_from, s.fill_at, s.rate), (Some(seen), seen, None));
+    }
+
+    /// The ball thrown leaves the HUD until the beacon lands and "Inbound" shows: a log had 23 call-ins shown cooling
+    /// down for about five seconds meanwhile, then on their way again.
+    #[test]
+    fn a_thrown_stratagem_out_of_the_hud_is_still_on_its_way() {
+        let mut e = engine();
+        let (reinforce, cannon) = (idx(&e, "Reinforce"), idx(&e, "LAS-98 Laser Cannon"));
+        feed_n(&mut e, &[row(reinforce, 0, Status::Ready), row(cannon, 3, Status::Active)], 2); // "Activating"
+        e.slots.get_mut(&3).unwrap().seen_at = ago(3.0);
+        assert!(!feed(&mut e, &[row(reinforce, 0, Status::Ready)]));
+        assert_eq!(view(&e, 3).status, Status::Active, "thrown, not landed");
+        // its Inbound line never read: landed after all, once gone ACTIVATING_GONE
+        let seen = ago(ACTIVATING_GONE.as_secs_f32() + 0.5);
+        e.slots.get_mut(&3).unwrap().seen_at = seen;
+        assert!(feed(&mut e, &[row(reinforce, 0, Status::Ready)]));
+        assert_eq!((view(&e, 3).status, e.slots[&3].cooldown_from), (Status::Cooldown, Some(seen)));
+    }
+
+    #[test]
+    fn an_inbound_row_gone_lands_when_its_timer_says() {
+        let mut e = engine();
+        let (reinforce, cannon) = (idx(&e, "Reinforce"), idx(&e, "LAS-98 Laser Cannon"));
+        let inbound = Row { landed: true, timer: Some(5), ..row(cannon, 3, Status::Active) };
+        feed_n(&mut e, &[row(reinforce, 0, Status::Ready), inbound], 2);
+        // gone for 3 s after "Inbound T-00:05": the pod is still coming
+        e.slots.get_mut(&3).unwrap().seen_at = ago(3.0);
+        assert!(!feed(&mut e, &[row(reinforce, 0, Status::Ready)]));
+        assert_eq!(view(&e, 3).status, Status::Active, "the timer hasn't run out");
+        // past the moment the timer gave: landed then, and cooling from it
+        let at = ago(0.5);
+        e.slots.get_mut(&3).unwrap().lands = Some(at);
+        assert!(feed(&mut e, &[row(reinforce, 0, Status::Ready)]));
+        assert_eq!((view(&e, 3).status, e.slots[&3].cooldown_from), (Status::Cooldown, Some(at)));
     }
 
     #[test]
